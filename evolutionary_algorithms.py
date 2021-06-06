@@ -3,7 +3,7 @@ from multiprocessing.dummy import Pool
 import matplotlib.pyplot as plt
 
 from utils import get_mean_and_standardized_rewards, mutate, update_params
-from fitness_functions.simple_curves_and_lines import quadratic_fxn_fitness
+from environments.simple_fitness_functions import quadratic_fxn_fitness
 
 
 # thread pool for parallelization
