@@ -16,18 +16,8 @@ def get_mean_and_standardized_rewards(reward_per_offspring):
     if reward_per_offspring.std() != 0:
         standardized_reward = (reward_per_offspring - mean_reward) / reward_per_offspring.std()
     else:
-        standardized_reward = np.zeros(len(reward_per_offspring))
+        standardized_reward = np.array([-1e3] * len(reward_per_offspring))
     return mean_reward, standardized_reward
-
-
-test_array = np.array([1, 3, 5])
-mr, sr = get_mean_and_standardized_rewards(reward_per_offspring=test_array)
-assert mr == 3.0
-np.testing.assert_allclose(actual=sr, desired=[-1.22474487, 0., 1.22474487], rtol=1e-5)
-test_array = np.array([1, 1, 1])
-mr, sr = get_mean_and_standardized_rewards(reward_per_offspring=test_array)
-assert mr == 1
-np.testing.assert_allclose(actual=sr, desired=[0., 0., 0.], rtol=1e-5)
 
 
 def mutate(standardized_reward, noise_array):
@@ -43,12 +33,6 @@ def mutate(standardized_reward, noise_array):
     :return: numpy array of shape (nbr_params,) of the standardized reward with noise
     """
     return np.dot(noise_array.T, standardized_reward)
-
-
-test_reward_array = np.array([3, 5])
-test_noise_array = np.array([[1, 3, 5], [2, 4, 6]])
-r = mutate(standardized_reward=test_reward_array, noise_array=test_noise_array)
-np.testing.assert_array_equal(r, np.array([13, 29, 45]))
 
 
 def update_params(params, learning_rate, sigma, noise_array, standardized_reward_w_noise):
@@ -68,18 +52,3 @@ def update_params(params, learning_rate, sigma, noise_array, standardized_reward
     #   scaled by the population size times sigma.
     param_updates = (learning_rate * standardized_reward_w_noise) / (generation_size * sigma)
     return params + param_updates
-
-
-test_reward_array = np.array([3, 5])
-test_noise_array = np.array([[1, 3, 5], [2, 4, 6]])
-r = update_params(
-    params=np.array([5, 4, 3]),
-    learning_rate=1e-3,
-    sigma=0.1,
-    noise_array=test_noise_array,
-    standardized_reward_w_noise=mutate(
-        standardized_reward=test_reward_array,
-        noise_array=test_noise_array
-    )
-)
-np.testing.assert_array_equal(r, np.array([5.065, 4.145, 3.225]))
