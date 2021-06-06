@@ -19,20 +19,6 @@ class FlappyBirdEnv:
         #self.env.getGameState = self.game.getGameState  # maybe not necessary
         self.action_map = self.env.getActionSet()  # [119, None]
 
-    def step(self, action):
-        """
-        Take an action and return the next observed state, reward, and done condition.
-
-        :param action: int - List index for self.action_map for the action to take.  This is
-            always either 0 or 1 for this particular game.
-        :return: next observed state (np array of shape (8,)), reward (float), done condition (bool)
-        """
-        action = self.action_map[action]  # retrieves the action from the key:value map
-        reward = self.env.act(action)     # calculates reward or fitness
-        done = self.env.game_over()       # checks if the game is over (Flappy Bird only ends when you lose)
-        obs = self.get_observation()
-        return obs, reward, done
-
     def get_observation(self):
         """
         The game state returns a dictionary whose keys describe what each value represents.
@@ -48,6 +34,20 @@ class FlappyBirdEnv:
         """
         obs = self.env.getGameState()
         return np.array(list(obs.values()))
+
+    def step(self, action):
+        """
+        Take an action and return the next observed state, reward, and done condition.
+
+        :param action: int - List index for self.action_map for the action to take.  This is
+            always either 0 or 1 for this particular game.
+        :return: next observed state (np array of shape (8,)), reward (float), done condition (bool)
+        """
+        action = self.action_map[action]  # retrieves the action from the key:value map
+        reward = self.env.act(action)     # calculates reward or fitness
+        done = self.env.game_over()       # checks if the game is over (Flappy Bird only ends when you lose)
+        obs = self.get_observation()
+        return obs, reward, done
 
     def reset(self):
         """
