@@ -1,13 +1,7 @@
 import numpy as np
 from multiprocessing.dummy import Pool
-import matplotlib.pyplot as plt
 
 from utils import get_mean_and_standardized_rewards, mutate, update_params
-from environments.simple_fitness_functions import quadratic_fxn_fitness
-
-
-# thread pool for parallelization
-pool = Pool(2)
 
 
 class EvolutionaryStrategy:
@@ -76,6 +70,7 @@ class EvolutionaryStrategy:
             noise_array = np.random.randn(self.generation_size, nbr_params)
 
             if parallel_process:
+                pool = Pool(2)
                 reward = pool.map(
                     self.get_reward_for_params,
                     [self.params + self.sigma * noise_array[child] for child in range(self.generation_size)]
@@ -112,22 +107,3 @@ class EvolutionaryStrategy:
             self._update_learning_rate(decay=lr_decay)
 
         return self.params, mean_reward_per_generation
-
-
-es = EvolutionaryStrategy(
-    nbr_generations=1000,
-    generation_size=50,
-    initial_params=np.random.randn(3),
-    reward_function=quadratic_fxn_fitness,
-)
-optimal_params, generational_fitness = es.evolve(
-    parallel_process=True,
-    lr_decay=1.
-)
-
-print("Optimal parameters:", optimal_params)
-plt.plot(generational_fitness)
-plt.title("Fitness by Generation")
-plt.ylabel("Fitness or Mean Reward")
-plt.xlabel("Generation")
-plt.show()

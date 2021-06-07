@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from environments.simple_fitness_functions import quadratic_fxn_fitness
+from reward_functions.fitness_functions import quadratic_fxn_fitness, flappy_bird_fitness
 
 
 class MyTestCase(unittest.TestCase):

@@ -33,6 +33,12 @@ class MyTestCase(unittest.TestCase):
             nbr_classes=2,
             hidden_layer_activation_func=relu
         )
+        self.param_length = (
+            (self.mlp.input_dim * self.mlp.hidden_units)
+            + self.mlp.hidden_units
+            + (self.mlp.hidden_units * self.mlp.output_dim)
+            + self.mlp.output_dim
+        )
 
     def test_init(self):
         # Assert that the parameters were initialized correctly
@@ -42,14 +48,21 @@ class MyTestCase(unittest.TestCase):
         np.testing.assert_equal(actual=self.mlp.b1, desired=np.zeros(50))
         np.testing.assert_equal(actual=self.mlp.b2, desired=np.zeros(2))
 
+    def test_get_params(self):
+        # Assert that the params returned have the right dimensionality
+        test_params = self.mlp.get_params()
+        assert len(test_params.shape) == 1
+        assert test_params.shape[0] == self.param_length
+
+    def test_set_params(self):
+        # Assert that the params can be set
+        test_params = np.random.randn(self.param_length,)
+        self.mlp.set_params(params=test_params)
+        output = self.mlp.get_params()
+        np.testing.assert_allclose(actual=output, desired=test_params, rtol=1e-5)
+
     def test_sample_action(self):
         # Assert that the sample action returns an integer index
         test_array = np.random.randn(8, )
         test_action = self.mlp.sample_action(x=test_array)
         assert isinstance(test_action, np.int64)
-
-    def test_get_params(self):
-        # Assert that the params returned have the right dimensionality
-        test_params = self.mlp.get_params()
-        assert len(test_params.shape) == 1
-        assert test_params.shape[0] == (8 * 50) + 50 + (50 * 2) + 2

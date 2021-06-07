@@ -1,18 +1,12 @@
 import numpy as np
 
-'''
-# hyperparameters
-D = len(env.reset()) * HISTORY_LENGTH
-M = 50
-K = 2
-'''
 
 def softmax(a):
     """
     Implements a softmax activation function.
 
     :param a: 2D numpy array equal to
-        (the dot product of the hidden input and the output layer weights) + output layer bias
+        (the dot product of the hidden layer and the output layer weights) + output layer bias
 
     :return: 2D numpy array of the class probabilities (the classes are actions to take)
     """
@@ -28,7 +22,8 @@ def relu(x):
     """
     Implements a rectified linear (ReLU) activation function.
 
-    :param x: 2D numpy array equal to (the dot product of the input and weights) + bias
+    :param x: 2D numpy array equal to
+        (the dot product of the input and hidden layer weights) + hidden layer bias
 
     :return: 2D numpy array that is zeroed out where x <= 0 and equal to the original value if x > 0
     """
@@ -36,12 +31,12 @@ def relu(x):
 
 
 class MLP:
-    def __init__(self, input_dim, hidden_units, nbr_classes, hidden_layer_activation_func=relu, params=None):
+    def __init__(self, input_dim, hidden_units, nbr_classes, hidden_layer_activation_func=relu):
         """
         Constructs a multilayer perceptron (MLP) that maps parameters of dimension input_dim (a numpy
         array of shape (8,) for Flappy Bird) to an action.  The network will learn to represent the
         environment so that the action that has the highest probability of maximal reward for a given
-        state can be found.  The parameters passed as input describe the state of the environment.
+        state can be found.
 
         The network has 1 hidden layer with weights w1 and biases b1, and an output layer with
         weights w2 and biases b2.
@@ -59,36 +54,51 @@ class MLP:
         :param hidden_units: int - number of units in hidden layer
         :param nbr_classes: int - number of actions that can be taken (2 for Flappy Bird)
         :param hidden_layer_activation_func: function - defines activation function to use for hidden units
-        :param params: A 1D array of parameters that will be reshaped and passed through the neural network
-            so that it can learn the weights for each parameter, in association with its reward from the
-            given environment.  If none are provided, the weights are randomly initialized.  If they are
-            provided, they will be of the shape defined by self.get_params()
         """
         self.input_dim = input_dim
         self.hidden_units = hidden_units
         self.output_dim = nbr_classes
         self.hidden_layer_activation_func = hidden_layer_activation_func
+        # Randomly initialize the weights
+        self.w1 = np.random.randn(self.input_dim, self.hidden_units) / np.sqrt(self.input_dim)
+        self.b1 = np.zeros(self.hidden_units)
+        self.w2 = np.random.randn(self.hidden_units, self.output_dim) / np.sqrt(self.hidden_units)
+        self.b2 = np.zeros(self.output_dim)
 
-        # If params are provided, they are given as a flattened array, so they need to be unflattened
+    def get_params(self):
+        """
+        Flattens all parameters of the neural network to a 1D numpy array.  The shape of this
+        flattened array will be:
+                 w1                +     b1    +              w2              +     b2
+        (input_dim * hidden_units) + hidden_units + (hidden_units * nbr_classes) + nbr_classes
+
+        :return: 1D array with dimension defined by the equation above
+        """
+        return np.concatenate([self.w1.flatten(), self.b1, self.w2.flatten(), self.b2])
+
+    def set_params(self, params):
+        """
+        Updates the networks parameters with the given params array.  The network will learn to represent the
+        environment so that the action that has the highest probability of maximal reward for a given
+        state can be found.  The parameters describe the state of the environment.
+
+        :param params: A 1D array of parameters that will be reshaped and passed through the neural network
+            so that it can learn the weights for each parameter, in association with its reward from the
+            given environment.  If none are provided, the weights are randomly initialized.  If they are
+            provided, they will be of the shape defined by self.get_params()
+        """
+        # Params are given as a flattened array, so they need to be unflattened
         #   and reshaped for the network
-        if params is not None:
-            self.w1 = params[:self.input_dim * self.hidden_units].reshape(self.input_dim, self.hidden_units)
-            self.b1 = params[
-                self.input_dim * self.hidden_units:
-                self.input_dim * self.hidden_units + self.hidden_units
-            ]
-            self.w2 = params[
-                self.input_dim * self.hidden_units + self.hidden_units:
-                self.input_dim * self.hidden_units + self.hidden_units + self.hidden_units * self.output_dim
-            ].reshape(self.hidden_units, self.output_dim)
-            self.b2 = params[-self.output_dim:]
-
-        # Otherwise randomly initialize the weights
-        else:
-            self.w1 = np.random.randn(self.input_dim, self.hidden_units) / np.sqrt(self.input_dim)
-            self.b1 = np.zeros(self.hidden_units)
-            self.w2 = np.random.randn(self.hidden_units, self.output_dim) / np.sqrt(self.hidden_units)
-            self.b2 = np.zeros(self.output_dim)
+        self.w1 = params[:self.input_dim * self.hidden_units].reshape(self.input_dim, self.hidden_units)
+        self.b1 = params[
+                  self.input_dim * self.hidden_units:
+                  self.input_dim * self.hidden_units + self.hidden_units
+                  ]
+        self.w2 = params[
+                  self.input_dim * self.hidden_units + self.hidden_units:
+                  self.input_dim * self.hidden_units + self.hidden_units + self.hidden_units * self.output_dim
+                  ].reshape(self.hidden_units, self.output_dim)
+        self.b2 = params[-self.output_dim:]
 
     def _feed_forward(self, input_tensor):
         """
@@ -121,17 +131,6 @@ class MLP:
         #   uncommented to test a probabilistic policy.
         # return np.random.choice(len(action_probabilities), p=action_probabilities)
         return np.argmax(action_probabilities)
-
-    def get_params(self):
-        """
-        Flattens all parameters of the neural network to a 1D numpy array.  The shape of this
-        flattened array will be:
-                 w1                +     b1    +              w2              +     b2
-        (input_dim * hidden_units) + hidden_units + (hidden_units * nbr_classes) + nbr_classes
-
-        :return: 1D array with dimension defined by the equation above
-        """
-        return np.concatenate([self.w1.flatten(), self.b1, self.w2.flatten(), self.b2])
 
     def save_model_weights(self, save_path='data/evolutionary_strategy_mlp_weights.npz'):
         weight_dict = {

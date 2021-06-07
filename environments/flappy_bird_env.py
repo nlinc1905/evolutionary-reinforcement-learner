@@ -16,7 +16,6 @@ class FlappyBirdEnv:
         self.game = FlappyBird(pipe_gap=125)
         self.env = PLE(self.game, fps=30, display_screen=False)
         self.env.init()
-        #self.env.getGameState = self.game.getGameState  # maybe not necessary
         self.action_map = self.env.getActionSet()  # [119, None]
 
     def get_observation(self):
@@ -41,6 +40,7 @@ class FlappyBirdEnv:
 
         :param action: int - List index for self.action_map for the action to take.  This is
             always either 0 or 1 for this particular game.
+
         :return: next observed state (np array of shape (8,)), reward (float), done condition (bool)
         """
         action = self.action_map[action]  # retrieves the action from the key:value map
