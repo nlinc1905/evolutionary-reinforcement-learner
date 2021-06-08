@@ -52,3 +52,20 @@ def update_params(params, learning_rate, sigma, noise_array, standardized_reward
     #   scaled by the population size times sigma.
     param_updates = (learning_rate * standardized_reward_w_noise) / (generation_size * sigma)
     return params + param_updates
+
+
+def play_flappy_bird(env, model, reward_function, nbr_games=1):
+    """
+    Plays Flappy Bird with the given model.
+
+    :param env: pre-initialized Flappy Bird environment
+    :param model: pre-initialized MLP model
+    :param reward_function: pre-initialized Flappy Bird reward function
+    :param nbr_games: how many games to play
+    """
+    env.set_display(True)
+    params = model.get_params()
+    while nbr_games > 0:
+        print("Reward for game:", reward_function(params))
+        input("Press enter to continue.")
+        nbr_games -= 1

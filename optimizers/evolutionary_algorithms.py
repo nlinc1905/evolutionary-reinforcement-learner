@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from multiprocessing.dummy import Pool
 from tqdm import tqdm
 
@@ -59,6 +60,10 @@ class EvolutionaryStrategy:
 
         :return: Tuple of final, optimal parameters (1D array) and the array of rewards per generation
         """
+        # error handler: when nbr_generations is not > os.cpu_count(), must run serially
+        if self.nbr_generations <= os.cpu_count():
+            parallel_process = False
+
         # get the number of parameters, assuming the input (initial_params) is a 1D array of parameters
         nbr_params = len(self.params)
 
