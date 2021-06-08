@@ -3,7 +3,7 @@ import unittest
 from environments.flappy_bird_env import FlappyBirdEnv
 
 
-class MyTestCase(unittest.TestCase):
+class FlappyBirdEnvTestCase(unittest.TestCase):
 
     def setUp(self):
         self.fb = FlappyBirdEnv()

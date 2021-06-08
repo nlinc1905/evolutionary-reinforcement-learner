@@ -1,5 +1,6 @@
 import numpy as np
 from multiprocessing.dummy import Pool
+from tqdm import tqdm
 
 from utils import get_mean_and_standardized_rewards, mutate, update_params
 
@@ -64,13 +65,13 @@ class EvolutionaryStrategy:
         # store the mean reward for each generation
         mean_reward_per_generation = np.zeros(self.nbr_generations)
 
-        for generation in range(self.nbr_generations):
+        for generation in tqdm(range(self.nbr_generations)):
             # generate random noise for the whole generation of offspring (each row = 1 offspring, each col = param)
             # this will be used to create children by slightly modifying the parent by the amount of noise (mutation)
             noise_array = np.random.randn(self.generation_size, nbr_params)
 
             if parallel_process:
-                pool = Pool(2)
+                pool = Pool(processes=None)  # defaults to using os.cpu_count() for nbr processes
                 reward = pool.map(
                     self.get_reward_for_params,
                     [self.params + self.sigma * noise_array[child] for child in range(self.generation_size)]

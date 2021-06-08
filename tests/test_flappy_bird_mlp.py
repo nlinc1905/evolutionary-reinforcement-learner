@@ -24,7 +24,7 @@ def test_relu():
     np.testing.assert_equal(actual=output_array, desired=expected_output_array)
 
 
-class MyTestCase(unittest.TestCase):
+class MLPTestCase(unittest.TestCase):
 
     def setUp(self):
         self.mlp = MLP(
