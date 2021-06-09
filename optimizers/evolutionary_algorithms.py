@@ -50,10 +50,11 @@ class EvolutionaryStrategy:
         """
         self.learning_rate = max(self.learning_rate * decay, min_learning_rate)
 
-    def evolve(self, parallel_process=True, lr_decay=1.):
+    def evolve(self, seed, parallel_process=True, lr_decay=1.):
         """
         Runs evolution.
 
+        :param seed: int - numpy random seed
         :param parallel_process: boolean - Should optimization be multithreaded?
         :param lr_decay: float - A decimal between 0 and 1 by which to multiply the learning rate each generation.
             Setting this to 1 (default) results in no decay.
@@ -73,6 +74,7 @@ class EvolutionaryStrategy:
         for generation in tqdm(range(self.nbr_generations)):
             # generate random noise for the whole generation of offspring (each row = 1 offspring, each col = param)
             # this will be used to create children by slightly modifying the parent by the amount of noise (mutation)
+            np.random.seed(seed)
             noise_array = np.random.randn(self.generation_size, nbr_params)
 
             if parallel_process:
@@ -93,6 +95,7 @@ class EvolutionaryStrategy:
             # Calculate standardized rewards and add mean_reward to the generation tracker
             mean_reward, standardized_reward = get_mean_and_standardized_rewards(reward_per_offspring=reward)
             mean_reward_per_generation[generation] = mean_reward
+            # print("Generation mean reward:", mean_reward)
 
             # Add Gaussian noise to standardized rewards (apply mutation)
             standardized_reward_w_noise = mutate(
@@ -113,3 +116,66 @@ class EvolutionaryStrategy:
             self._update_learning_rate(decay=lr_decay)
 
         return self.params, mean_reward_per_generation
+
+
+import cma
+class CMAES:
+    def __init__(
+            self,
+            nbr_generations,
+            generation_size,
+            initial_params,
+            reward_function,
+            sigma=0.1,
+            weight_decay=0.01
+    ):
+        self.nbr_generations = nbr_generations
+        self.generation_size = generation_size
+        self.params = initial_params
+        self.get_reward_for_params = reward_function
+        self.sigma = sigma
+        self.weight_decay = weight_decay
+        self.solutions = None
+        self.cmaes = cma.CMAEvolutionStrategy(
+            x0=len(self.params) * [0],
+            sigma0=self.sigma,
+            inopts={'popsize': self.generation_size}
+        )
+
+    def _compute_weight_decay(self, model_param_list):
+        model_param_grid = np.array(model_param_list)
+        return - self.weight_decay * np.mean(model_param_grid * model_param_grid, axis=1)
+
+    def _tell_cmaes_about_reward(self, reward):
+        reward_table = -np.array(reward)
+        if self.weight_decay > 0:
+            l2_decay = self._compute_weight_decay(model_param_list=self.solutions)
+            reward_table += l2_decay
+        self.cmaes.tell(solutions=self.solutions, function_values=reward_table.tolist())
+
+    def _ask_cmaes_about_solutions(self):
+        self.solutions = np.array(self.cmaes.ask())
+        return self.solutions
+
+    def evolve(self):
+        # store the reward for the best params from each generation
+        reward_per_generation = np.zeros(self.nbr_generations)
+
+        for generation in tqdm(range(self.nbr_generations)):
+            params = self._ask_cmaes_about_solutions()
+            # store the reward for each child
+            reward = np.zeros(self.generation_size)
+
+            for child in range(self.generation_size):
+                reward[child] = self.get_reward_for_params(params=params[child])
+
+            # Tell the CMA-ES algorithm what the reward for this generation is
+            self._tell_cmaes_about_reward(reward=reward)
+            generation_optimal_params, generation_reward_for_optimal_params = self.cmaes.result[:2]
+            reward_per_generation[generation] = generation_reward_for_optimal_params
+
+            # Update params to best params - remember that CMAES minimizes the objective, not maximize
+            if np.min(reward_per_generation) == generation_reward_for_optimal_params:
+                self.params = generation_optimal_params
+
+        return self.params, reward_per_generation

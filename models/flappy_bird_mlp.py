@@ -31,7 +31,7 @@ def relu(x):
 
 
 class MLP:
-    def __init__(self, input_dim, hidden_units, nbr_classes, hidden_layer_activation_func=relu):
+    def __init__(self, input_dim, hidden_units, nbr_classes, seed, hidden_layer_activation_func=relu):
         """
         Constructs a multilayer perceptron (MLP) that maps parameters of dimension input_dim (a numpy
         array of shape (8,) for Flappy Bird) to an action.  The network will learn to represent the
@@ -53,6 +53,7 @@ class MLP:
         :param input_dim: int - the number of parameters from the environment
         :param hidden_units: int - number of units in hidden layer
         :param nbr_classes: int - number of actions that can be taken (2 for Flappy Bird)
+        :param seed: int - numpy random seed
         :param hidden_layer_activation_func: function - defines activation function to use for hidden units
         """
         self.input_dim = input_dim
@@ -60,8 +61,10 @@ class MLP:
         self.output_dim = nbr_classes
         self.hidden_layer_activation_func = hidden_layer_activation_func
         # Randomly initialize the weights
+        np.random.seed(seed)
         self.w1 = np.random.randn(self.input_dim, self.hidden_units) / np.sqrt(self.input_dim)
         self.b1 = np.zeros(self.hidden_units)
+        np.random.seed(seed)
         self.w2 = np.random.randn(self.hidden_units, self.output_dim) / np.sqrt(self.hidden_units)
         self.b2 = np.zeros(self.output_dim)
 
@@ -91,13 +94,13 @@ class MLP:
         #   and reshaped for the network
         self.w1 = params[:self.input_dim * self.hidden_units].reshape(self.input_dim, self.hidden_units)
         self.b1 = params[
-                  self.input_dim * self.hidden_units:
-                  self.input_dim * self.hidden_units + self.hidden_units
-                  ]
+            self.input_dim * self.hidden_units:
+            self.input_dim * self.hidden_units + self.hidden_units
+        ]
         self.w2 = params[
-                  self.input_dim * self.hidden_units + self.hidden_units:
-                  self.input_dim * self.hidden_units + self.hidden_units + self.hidden_units * self.output_dim
-                  ].reshape(self.hidden_units, self.output_dim)
+            self.input_dim * self.hidden_units + self.hidden_units:
+            self.input_dim * self.hidden_units + self.hidden_units + self.hidden_units * self.output_dim
+        ].reshape(self.hidden_units, self.output_dim)
         self.b2 = params[-self.output_dim:]
 
     def _feed_forward(self, input_tensor):
