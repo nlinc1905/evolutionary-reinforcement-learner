@@ -27,10 +27,12 @@ def test_relu():
 class MLPTestCase(unittest.TestCase):
 
     def setUp(self):
+        self.seed = 14
         self.mlp = MLP(
             input_dim=8,
             hidden_units=50,
             nbr_classes=2,
+            seed=self.seed,
             hidden_layer_activation_func=relu
         )
         self.param_length = (
@@ -56,6 +58,7 @@ class MLPTestCase(unittest.TestCase):
 
     def test_set_params(self):
         # Assert that the params can be set
+        np.random.seed(self.seed)
         test_params = np.random.randn(self.param_length,)
         self.mlp.set_params(params=test_params)
         output = self.mlp.get_params()
@@ -63,6 +66,7 @@ class MLPTestCase(unittest.TestCase):
 
     def test_sample_action(self):
         # Assert that the sample action returns an integer index
+        np.random.seed(self.seed)
         test_array = np.random.randn(8, )
         test_action = self.mlp.sample_action(x=test_array)
         assert isinstance(test_action, np.int64)

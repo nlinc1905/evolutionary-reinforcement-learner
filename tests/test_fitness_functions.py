@@ -29,12 +29,14 @@ class QuadraticFxnFitnessTestCase(unittest.TestCase):
 class FlappyBirdFitnessTestCase(unittest.TestCase):
 
     def setUp(self):
+        self.seed = 14
         state_history_len = 1
         env = FlappyBirdEnv()
         mlp = MLP(
             input_dim=len(env.reset()) * state_history_len,
             hidden_units=50,
-            nbr_classes=2
+            nbr_classes=2,
+            seed=self.seed
         )
         self.expected_mlp_param_size = (
             (mlp.input_dim * mlp.hidden_units)
@@ -51,6 +53,7 @@ class FlappyBirdFitnessTestCase(unittest.TestCase):
     def test_evaluate(self):
         # Assert that the outcome of the evaluation is either
         #   int (if episode length returned) or float (if episode reward returned)
+        np.random.seed(self.seed)
         test_params_array = np.random.randn(self.expected_mlp_param_size)
         episode_reward = self.fbf.evaluate(params=test_params_array)
         assert (isinstance(episode_reward, int) or isinstance(episode_reward, float))

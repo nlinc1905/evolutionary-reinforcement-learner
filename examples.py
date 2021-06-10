@@ -111,14 +111,15 @@ def run_flappy_bir_simulation_with_agent(weights):
 def train_function_optimizing_cmaes_agent(plot_learning_curve=False):
     np.random.seed(SEED)
     cmaes = CMAES(
-        nbr_generations=300,
+        nbr_generations=50,
         generation_size=50,
         initial_params=np.random.randn(3),
         reward_function=quadratic_fxn_fitness,
+        seed=SEED,
         sigma=0.1,
         weight_decay=0.01
     )
-    optimal_params, generational_fitness = cmaes.evolve()
+    optimal_params, generational_fitness = cmaes.evolve(parallel_process=True)
 
     if plot_learning_curve:
         plt.plot(-generational_fitness)
@@ -149,10 +150,11 @@ def train_flappy_bird_cmaes_agent(plot_learning_curve=False):
         generation_size=30,
         initial_params=params,
         reward_function=fbf.evaluate,
+        seed=SEED,
         sigma=0.1,
         weight_decay=0.01
     )
-    optimal_params, generational_fitness = cmaes.evolve()
+    optimal_params, generational_fitness = cmaes.evolve(parallel_process=False)
     mlp.set_params(params=optimal_params)
     mlp.save_model_weights(
         save_path="data/cma_evolutionary_strategy_mlp_weights.npz"
@@ -168,6 +170,7 @@ def train_flappy_bird_cmaes_agent(plot_learning_curve=False):
     return np.mean(generational_fitness), optimal_params
 
 
+SEED = 447893
 # best_gen_reward, best_gen_params = train_function_optimizing_cmaes_agent(plot_learning_curve=True)
 best_gen_reward, best_gen_params = train_flappy_bird_cmaes_agent(plot_learning_curve=True)
 run_flappy_bir_simulation_with_agent(weights="data/cma_evolutionary_strategy_mlp_weights.npz")
