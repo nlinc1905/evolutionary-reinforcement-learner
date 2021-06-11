@@ -1,4 +1,5 @@
 import unittest
+import numpy as np
 
 from environments.ms_pacman_env import MsPacmanEnv
 
@@ -9,11 +10,8 @@ class MsPacmanEnvTestCase(unittest.TestCase):
         self.env = MsPacmanEnv()
 
     def test_init(self):
-        # Assert that display_screen is False by default and the action map equals
-        #   what is expected from the documentation
-        assert not self.env.env.display_screen
+        # Assert that environment has initialized
         assert len(self.env.initial_obs) != 0
-        assert self.env.action_map == [i for i in range(10)]
 
     def test_get_observation(self):
         # Assert that an observation with all 128 dimensions is returned
@@ -32,10 +30,11 @@ class MsPacmanEnvTestCase(unittest.TestCase):
         # Assert that another step produces a new observation
         action = 1
         new_obs, reward, done = self.env.step(action=action)
-        assert obs[0] != new_obs[0]
+        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, obs, new_obs)
 
     def test_reset(self):
         # Assert that resetting returns an observation and that the game is not over upon reset
         obs = self.env.reset()
+        obs, reward, done = self.env.step(self.env.env.action_space.sample())
         assert len(obs) == 128
-        assert not self.env.env.game_over()
+        assert not done
