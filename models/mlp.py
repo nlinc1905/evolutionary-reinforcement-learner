@@ -34,7 +34,7 @@ class MLP:
     def __init__(self, input_dim, hidden_units, nbr_classes, seed, hidden_layer_activation_func=relu):
         """
         Constructs a multilayer perceptron (MLP) that maps parameters of dimension input_dim (a numpy
-        array of shape (8,) for Flappy Bird) to an action.  The network will learn to represent the
+        array of shape (8,) for Flappy Bird, for example) to an action.  The network will learn to represent the
         environment so that the action that has the highest probability of maximal reward for a given
         state can be found.
 
@@ -52,7 +52,7 @@ class MLP:
 
         :param input_dim: int - the number of parameters from the environment
         :param hidden_units: int - number of units in hidden layer
-        :param nbr_classes: int - number of actions that can be taken (2 for Flappy Bird)
+        :param nbr_classes: int - number of actions that can be taken in the environment
         :param seed: int - numpy random seed
         :param hidden_layer_activation_func: function - defines activation function to use for hidden units
         """
@@ -60,6 +60,13 @@ class MLP:
         self.hidden_units = hidden_units
         self.output_dim = nbr_classes
         self.hidden_layer_activation_func = hidden_layer_activation_func
+        # Save the shape of the expected input parameter array
+        self.expected_input_shape = (
+                (self.input_dim * self.hidden_units)
+                + self.hidden_units
+                + (self.hidden_units * self.output_dim)
+                + self.output_dim
+        )
         # Randomly initialize the weights
         np.random.seed(seed)
         self.w1 = np.random.randn(self.input_dim, self.hidden_units) / np.sqrt(self.input_dim)
@@ -74,6 +81,7 @@ class MLP:
         flattened array will be:
                  w1                +     b1    +              w2              +     b2
         (input_dim * hidden_units) + hidden_units + (hidden_units * nbr_classes) + nbr_classes
+        This is the same as self.expected_input_shape, as defined upon initialization.
 
         :return: 1D array with dimension defined by the equation above
         """
@@ -135,7 +143,7 @@ class MLP:
         # return np.random.choice(len(action_probabilities), p=action_probabilities)
         return np.argmax(action_probabilities)
 
-    def save_model_weights(self, save_path='data/evolutionary_strategy_mlp_weights.npz'):
+    def save_model_weights(self, save_path):
         weight_dict = {
             'w1': self.w1,
             'b1': self.b1,
@@ -145,7 +153,7 @@ class MLP:
         np.savez(save_path, **weight_dict)
         return print(f"Model weights saved to {save_path}")
 
-    def load_model_weights(self, weight_path='data/evolutionary_strategy_mlp_weights.npz'):
+    def load_model_weights(self, weight_path):
         w = np.load(weight_path)
         self.w1, self.b1, self.w2, self.b2 = w['w1'], w['b1'], w['w2'], w['b2']
         # Ensure that the dimensions for the network match the loaded weights by overwriting them

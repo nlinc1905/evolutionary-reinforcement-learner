@@ -20,20 +20,20 @@ def quadratic_fxn_fitness(params):
     return -(x0 ** 2 + 0.1 * (x1 - 1) ** 2 + 0.5 * (x2 + 2) ** 2)
 
 
-class FlappyBirdFitness:
-    def __init__(self, mlp, flappy_bird_env, state_history_length=1):
+class ParameterFitness:
+    def __init__(self, model, env, state_history_length=1):
         """
         This object is a wrapper for the environment, which takes a set of params and returns a reward.
         It is the function to be maximized, a.k.a. the fitness function or objective function.
 
-        :param mlp: A MLP object that has been initialized already.
-        :param flappy_bird_env: A FlappyBirdEnv object that has been initialized already
+        :param model: A pre-initialized model
+        :param env: A pre-initialized MsPacmanEnv object
         :param state_history_length: Optional parameter defining how many observations to keep as
             part of the current state.  This allows many observations to inform the game state.
             Defaults to 1, meaning only the current observation makes up a state.
         """
-        self.mlp = mlp
-        self.flappy_bird_env = flappy_bird_env
+        self.model = model
+        self.env = env
         self.state_history_length = state_history_length
 
     def evaluate(self, params):
@@ -45,26 +45,20 @@ class FlappyBirdFitness:
 
         :return: float - the total reward for one episode or game
         """
-        # Check that the flattened parameters length equals what is expected for the MLP
-        expected_mlp_param_size = (
-                (self.mlp.input_dim * self.mlp.hidden_units)
-                + self.mlp.hidden_units
-                + (self.mlp.hidden_units * self.mlp.output_dim)
-                + self.mlp.output_dim
-        )
-        if len(params) != expected_mlp_param_size:
+        # Check that the flattened parameters length equals what is expected by the model
+        if len(params) != self.model.expected_input_shape:
             raise Exception(
-                f"This environment requires {expected_mlp_param_size} parameters and {len(params)} were given."
+                f"The model expects {self.model.expected_input_shape} parameters, but {len(params)} were given."
             )
 
-        # Update MLP with given params
-        self.mlp.set_params(params=params)
+        # Update model with given params
+        self.model.set_params(params=params)
 
         # Play one episode (one game) and return the total reward
         episode_reward = 0
         episode_length = 0  # game only ends when you lose, so tracking episode length is better to assess quality
         done = False
-        obs = self.flappy_bird_env.reset()
+        obs = self.env.reset()
         obs_dim = len(obs)
 
         # If a state is supposed to comprise of multiple observations, expand the current state
@@ -78,10 +72,10 @@ class FlappyBirdFitness:
 
         while not done:
             # Get the action from the model
-            action = self.mlp.sample_action(x=state)
+            action = self.model.sample_action(x=state)
 
             # Perform the action
-            obs, reward, done = self.flappy_bird_env.step(action)
+            obs, reward, done = self.env.step(action)
 
             # Update total reward
             episode_reward += reward
@@ -98,4 +92,4 @@ class FlappyBirdFitness:
                 state = obs
 
         # return episode_reward  # use this for raw reward
-        return episode_length   # use this to show learning progress
+        return episode_length  # use this to show learning progress

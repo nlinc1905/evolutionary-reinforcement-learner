@@ -1,4 +1,6 @@
+atari-py==0.2.0
 cma==3.0.3
+gym==0.17.2
 matplotlib==3.3.2
 numpy==1.19.5
 Pillow==7.0.0

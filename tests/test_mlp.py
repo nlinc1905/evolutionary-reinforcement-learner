@@ -1,7 +1,7 @@
 import numpy as np
 import unittest
 
-from models.flappy_bird_mlp import softmax, relu, MLP
+from models.mlp import softmax, relu, MLP
 
 
 def test_softmax():
@@ -35,7 +35,7 @@ class MLPTestCase(unittest.TestCase):
             seed=self.seed,
             hidden_layer_activation_func=relu
         )
-        self.param_length = (
+        self.expected_param_length = (
             (self.mlp.input_dim * self.mlp.hidden_units)
             + self.mlp.hidden_units
             + (self.mlp.hidden_units * self.mlp.output_dim)
@@ -49,17 +49,18 @@ class MLPTestCase(unittest.TestCase):
         assert self.mlp.output_dim == 2
         np.testing.assert_equal(actual=self.mlp.b1, desired=np.zeros(50))
         np.testing.assert_equal(actual=self.mlp.b2, desired=np.zeros(2))
+        np.testing.assert_equal(actual=self.mlp.expected_input_shape, desired=self.expected_param_length)
 
     def test_get_params(self):
         # Assert that the params returned have the right dimensionality
         test_params = self.mlp.get_params()
         assert len(test_params.shape) == 1
-        assert test_params.shape[0] == self.param_length
+        assert test_params.shape[0] == self.expected_param_length
 
     def test_set_params(self):
         # Assert that the params can be set
         np.random.seed(self.seed)
-        test_params = np.random.randn(self.param_length,)
+        test_params = np.random.randn(self.expected_param_length,)
         self.mlp.set_params(params=test_params)
         output = self.mlp.get_params()
         np.testing.assert_allclose(actual=output, desired=test_params, rtol=1e-5)

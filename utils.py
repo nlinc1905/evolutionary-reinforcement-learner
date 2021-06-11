@@ -54,18 +54,25 @@ def update_params(params, learning_rate, sigma, noise_array, standardized_reward
     return params + param_updates
 
 
-def play_flappy_bird(env, model, reward_function, nbr_games=1):
+def play_game(env, model, reward_function, nbr_games=1):
     """
-    Plays Flappy Bird with the given model.
+    Plays game with the given environment and model.
 
-    :param env: pre-initialized Flappy Bird environment
+    :param env: pre-initialized environment
     :param model: pre-initialized MLP model
-    :param reward_function: pre-initialized Flappy Bird reward function
+    :param reward_function: pre-initialized reward function
     :param nbr_games: how many games to play
     """
-    env.set_display(True)
+    # Initialize environment display depending on type
+    if env.env_name == "FlappyBird":
+        env.set_display(True)
+    else:
+        env.env.render()
     params = model.get_params()
     while nbr_games > 0:
         print("Reward for game:", reward_function(params))
         input("Press enter to continue.")
         nbr_games -= 1
+    # Close any non-PLE environment
+    if env.env_name != "FlappyBird":
+        env.env.close()

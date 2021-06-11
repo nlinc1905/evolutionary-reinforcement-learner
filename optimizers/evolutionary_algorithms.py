@@ -14,7 +14,9 @@ class EvolutionaryStrategy:
             generation_size,
             initial_params,
             reward_function,
+            seed,
             initial_learning_rate=1e-3,
+            learning_rate_decay=1.,
             sigma=0.1
     ):
         """
@@ -30,7 +32,10 @@ class EvolutionaryStrategy:
             argument.  The parameters are sometimes called 'chromosomes' in evolutionary strategies.
         :param reward_function: function - This function is like the environment, which takes a set of params
             and returns a reward.  It is the function to be maximized, a.k.a. fitness function or objective function
+        :param seed: int - seed for repeatability
         :param initial_learning_rate: float - The learning rate at the beginning of training.
+        :param learning_rate_decay: float - A decimal between 0 and 1 by which to multiply the learning rate each
+            generation.  Setting this to 1 (default) results in no decay.
         :param sigma: float - The step size or mutation strength (the standard deviation of the normal distribution).
             This will be multiplied by a Gaussian random noise vector to mutate offspring.
         """
@@ -38,7 +43,9 @@ class EvolutionaryStrategy:
         self.generation_size = generation_size
         self.params = initial_params
         self.get_reward_for_params = reward_function
+        self.seed = seed
         self.learning_rate = initial_learning_rate
+        self.learning_rate_decay = learning_rate_decay
         self.sigma = sigma
 
     def _update_learning_rate(self, decay=1., min_learning_rate=0.):
@@ -51,14 +58,11 @@ class EvolutionaryStrategy:
         """
         self.learning_rate = max(self.learning_rate * decay, min_learning_rate)
 
-    def evolve(self, seed, parallel_process=True, lr_decay=1.):
+    def evolve(self, parallel_process=False):
         """
         Runs evolution.
 
-        :param seed: int - numpy random seed
-        :param parallel_process: boolean - Should optimization be multithreaded?
-        :param lr_decay: float - A decimal between 0 and 1 by which to multiply the learning rate each generation.
-            Setting this to 1 (default) results in no decay.
+        :param parallel_process: boolean - Should optimization be multi-threaded?
 
         :return: Tuple of final, optimal parameters (1D array) and the array of rewards per generation
         """
@@ -75,7 +79,7 @@ class EvolutionaryStrategy:
         for generation in tqdm(range(self.nbr_generations)):
             # generate random noise for the whole generation of offspring (each row = 1 offspring, each col = param)
             # this will be used to create children by slightly modifying the parent by the amount of noise (mutation)
-            np.random.seed(seed)
+            np.random.seed(self.seed)
             noise_array = np.random.randn(self.generation_size, nbr_params)
 
             if parallel_process:
@@ -114,7 +118,7 @@ class EvolutionaryStrategy:
             )
 
             # decay the learning rate
-            self._update_learning_rate(decay=lr_decay)
+            self._update_learning_rate(decay=self.learning_rate_decay)
 
         return self.params, mean_reward_per_generation
 
@@ -147,8 +151,8 @@ class CMAES:
         :param seed: int - seed for repeatability
         :param sigma: float - The step size or mutation strength (the standard deviation of the normal distribution).
             This will be multiplied by a Gaussian random noise vector to mutate offspring.
-        :param weight_decay: float - The weights applied to the each generation decay over time so that later
-            generations update the reward a little less, and the decay rate is controlled by this argument.
+        :param weight_decay: float - This is a L2 penalty parameter that nudges the offspring into more reasonable
+            parameter boundaries by decaying their rewards very slightly.
         """
         self.nbr_generations = nbr_generations
         self.generation_size = generation_size
@@ -207,9 +211,11 @@ class CMAES:
         self.solutions = np.array(self.cmaes.ask())
         return self.solutions
 
-    def evolve(self, parallel_process=True):
+    def evolve(self, parallel_process=False):
         """
         Runs evolution.
+
+        :param parallel_process: boolean - Should optimization be multi-threaded?
 
         :return: Tuple of final, optimal parameters (1D array) and the array of rewards per generation
         """
@@ -235,7 +241,7 @@ class CMAES:
             generation_optimal_params, generation_reward_for_optimal_params = self.cmaes.result[:2]
             reward_per_generation[generation] = generation_reward_for_optimal_params
 
-            # Update params to best params - remember that CMAES minimizes the objective, not maximize
+            # Update params to best params - remember that CMA-ES minimizes the objective, not maximize
             if np.min(reward_per_generation) == generation_reward_for_optimal_params:
                 self.params = generation_optimal_params
 

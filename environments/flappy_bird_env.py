@@ -1,22 +1,29 @@
 import numpy as np
+import time
 from ple import PLE
 from ple.games.flappybird import FlappyBird
 
 
 class FlappyBirdEnv:
-    def __init__(self):
+    def __init__(self, sleep_time=0.0):
         """
         Constructs an environment like the environments in OpenAI Gym's library.
+
+        :param sleep_time: float - how long the env should pause between each action.  This argument is
+            only used when env.display = True so you can actually see what is going on.  Otherwise the
+            game rendering is so fast that it is hard to see.
 
         There is only 1 possible action in Flappy Bird.  The getActionSet method retrieves all
         possible actions.  Ordinarily a single action would be represented in a binary way, (0, 1),
         where 1 is when the action is taken.  Here however, PLE returns [119, None], where 119 is the
         action.
         """
+        self.sleep_time = sleep_time
         self.game = FlappyBird(pipe_gap=125)
         self.env = PLE(self.game, fps=30, display_screen=False)
         self.env.init()
         self.action_map = self.env.getActionSet()  # [119, None]
+        self.env_name = "FlappyBird"
 
     def get_observation(self):
         """
@@ -44,6 +51,7 @@ class FlappyBirdEnv:
         :return: next observed state (np array of shape (8,)), reward (float), done condition (bool)
         """
         action = self.action_map[action]  # retrieves the action from the key:value map
+        time.sleep(self.sleep_time)       # sleeps - useful if display=True so you can actually see what's going on
         reward = self.env.act(action)     # calculates reward or fitness
         done = self.env.game_over()       # checks if the game is over (Flappy Bird only ends when you lose)
         obs = self.get_observation()
