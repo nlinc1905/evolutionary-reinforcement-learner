@@ -18,6 +18,9 @@ def train_function_optimizing_agent(optimizer, plot_learning_curve=False):
     optimal_params, generational_fitness = optimizer.evolve()
 
     if plot_learning_curve:
+        # Make positive, if needed, so the curve goes up instead of down
+        if generational_fitness[-1] < generational_fitness[0]:
+            generational_fitness *= -1
         plt.plot(generational_fitness)
         plt.title("Fitness by Generation")
         plt.ylabel("Fitness or Mean Reward")
@@ -33,7 +36,7 @@ def train_flappy_bird_es_agent(plot_learning_curve=False):
         input_dim=len(env.reset()) * STATE_HISTORY_LEN,
         hidden_units=50,
         nbr_classes=len(env.action_map),
-        seed=SEED,
+        seed=ES_SEED,
     )
     params = mlp.get_params()
     fitfxn = ParameterFitness(
@@ -117,7 +120,7 @@ def train_ms_pacman_es_agent(plot_learning_curve=False):
         state_history_length=STATE_HISTORY_LEN
     )
     es = EvolutionaryStrategy(
-        nbr_generations=2,
+        nbr_generations=100,
         generation_size=30,
         initial_params=params,
         reward_function=fitfxn.evaluate,
@@ -178,7 +181,6 @@ def train_ms_pacman_cmaes_agent(plot_learning_curve=False):
 
 
 def run_game_simulation_with_agent(env, weights, seed):
-
     mlp = MLP(
         input_dim=len(env.reset()) * STATE_HISTORY_LEN,
         hidden_units=50,
@@ -230,9 +232,9 @@ train_function_optimizing_agent(optimizer=cmaes, plot_learning_curve=True)
 # best_gen_reward, best_gen_params = train_flappy_bird_es_agent(plot_learning_curve=True)
 # best_gen_reward, best_gen_params = train_flappy_bird_cmaes_agent(plot_learning_curve=True)
 
-env = FlappyBirdEnv(sleep_time=0.01)
-run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_flappy.npz", seed=ES_SEED)
-run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_flappy.npz", seed=CMAES_SEED)
+# env = FlappyBirdEnv(sleep_time=0.01)
+# run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_flappy.npz", seed=ES_SEED)
+# run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_flappy.npz", seed=CMAES_SEED)
 
 # Run for Ms Pacman
 
@@ -242,10 +244,11 @@ run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_flappy.n
 # best_gen_reward, best_gen_params = train_ms_pacman_es_agent(plot_learning_curve=True)
 # best_gen_reward, best_gen_params = train_ms_pacman_cmaes_agent(plot_learning_curve=True)
 
-env = MsPacmanEnv(sleep_time=0.01)
-run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_pacman.npz", seed=ES_SEED)
-run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_pacman.npz", seed=ES_SEED)
+# env = MsPacmanEnv(sleep_time=0.05)
+# run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_pacman.npz", seed=ES_SEED)
+# run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_pacman.npz", seed=CMAES_SEED)
 
 
 # TODO: add TF neural net
 # TODO: implement PEPG
+# TODO: add evaluation framework

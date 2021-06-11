@@ -63,14 +63,9 @@ def play_game(env, model, reward_function, nbr_games=1):
     :param reward_function: pre-initialized reward function
     :param nbr_games: how many games to play
     """
-    # Initialize environment display depending on type
-    if env.env_name == "FlappyBird":
-        env.set_display(True)
-    else:
-        env.env.render()
     params = model.get_params()
     while nbr_games > 0:
-        print("Reward for game:", reward_function(params))
+        print("Reward for game:", reward_function(params=params, render=True))
         input("Press enter to continue.")
         nbr_games -= 1
     # Close any non-PLE environment

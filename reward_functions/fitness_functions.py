@@ -36,12 +36,15 @@ class ParameterFitness:
         self.env = env
         self.state_history_length = state_history_length
 
-    def evaluate(self, params):
+    def evaluate(self, params, render=False):
         """
         Evaluates the fitness of a given set of parameters.
 
         :param params: A 1D numpy array of parameters to pass to the environment or function.  This is
             the concatenated/flattened params containing the weights and biases for the MLP layers.
+        :param render: Bool - whether or not to display the game screen while evaluating fitness.  Set
+            this to true to watch a play through with learned weights.  Otherwise, it is best to leave
+            this as False.
 
         :return: float - the total reward for one episode or game
         """
@@ -56,7 +59,7 @@ class ParameterFitness:
 
         # Play one episode (one game) and return the total reward
         episode_reward = 0
-        episode_length = 0  # game only ends when you lose, so tracking episode length is better to assess quality
+        episode_length = 0  # game only ends when you lose, so tracking episode length is another way to assess quality
         done = False
         obs = self.env.reset()
         obs_dim = len(obs)
@@ -71,6 +74,12 @@ class ParameterFitness:
             state = obs
 
         while not done:
+            # Display the game, if necessary
+            if render and self.env.env_name == "FlappyBird":
+                self.env.set_display(True)
+            elif render:
+                self.env.env.render()
+
             # Get the action from the model
             action = self.model.sample_action(x=state)
 
@@ -92,4 +101,4 @@ class ParameterFitness:
                 state = obs
 
         # return episode_reward  # use this for raw reward
-        return episode_length  # use this to show learning progress
+        return episode_length  # use this for game duration
