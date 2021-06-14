@@ -1,5 +1,5 @@
 # evolutionary-reinforcement-learner
-Evolutionary algorithm for reinforcement learning
+Evolutionary algorithms for reinforcement learning
 
 # How to Run
 
