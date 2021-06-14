@@ -1,9 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from tensorflow.keras.layers import Dense, Input, Flatten
+from tensorflow.keras.models import Model
+
 from environments.flappy_bird_env import FlappyBirdEnv
 from environments.ms_pacman_env import MsPacmanEnv
 from models.mlp import MLP
+from models.tf_model import EvolutionaryModel
 from optimizers.evolutionary_algorithms import EvolutionaryStrategy, CMAES
 from reward_functions.fitness_functions import quadratic_fxn_fitness, ParameterFitness
 from utils import play_game
@@ -203,6 +207,68 @@ def run_game_simulation_with_agent(env, weights, seed):
     )
 
 
+def build_tf_mlp(env):
+    inputs = Input(shape=len(env.reset()) * STATE_HISTORY_LEN)
+    x = Flatten()(inputs)
+    x = Dense(50, activation="relu")(x)
+    outputs = Dense(len(env.action_map), activation="softmax")(x)
+    model = Model(inputs=inputs, outputs=outputs)
+    model.compile()  # compile with defaults because they do not matter, as optimization will not be used
+    print(model.summary())
+    return model
+
+
+def train_flappy_bird_es_agent_tf(plot_learning_curve=False):
+    env = FlappyBirdEnv()
+    mlp = EvolutionaryModel(model=build_tf_mlp(env=env))
+    params = mlp.get_params()
+    fitfxn = ParameterFitness(
+        model=mlp,
+        env=env,
+        state_history_length=STATE_HISTORY_LEN
+    )
+    es = EvolutionaryStrategy(
+        nbr_generations=200,
+        generation_size=30,
+        initial_params=params,
+        reward_function=fitfxn.evaluate,
+        seed=ES_SEED,
+        initial_learning_rate=2e-2,
+        learning_rate_decay=0.995,
+        sigma=0.1,
+    )
+    optimal_params, generational_fitness = es.evolve()
+    mlp.set_params(params=optimal_params)
+    mlp.save_model_weights(save_path="data/es_tf_mlp_weights_flappy.ckpt")
+
+    if plot_learning_curve:
+        plt.plot(generational_fitness)
+        plt.title("Fitness by Generation")
+        plt.ylabel("Fitness or Mean Reward")
+        plt.xlabel("Generation")
+        plt.show()
+
+    return np.mean(generational_fitness), optimal_params
+
+
+def run_game_simulation_with_agent_tf(env, weights):
+    model = EvolutionaryModel(model=build_tf_mlp(env=env))
+    model.load_model_weights(
+        weight_path=weights
+    )
+    fitfxn = ParameterFitness(
+        model=model,
+        env=env,
+        state_history_length=STATE_HISTORY_LEN
+    )
+    play_game(
+        env=env,
+        model=model,
+        reward_function=fitfxn.evaluate,
+        nbr_games=5
+    )
+
+
 # Run for quadratic function
 
 np.random.seed(ES_SEED)
@@ -231,10 +297,12 @@ train_function_optimizing_agent(optimizer=cmaes, plot_learning_curve=True)
 
 # best_gen_reward, best_gen_params = train_flappy_bird_es_agent(plot_learning_curve=True)
 # best_gen_reward, best_gen_params = train_flappy_bird_cmaes_agent(plot_learning_curve=True)
+# best_gen_reward, best_gen_params = train_flappy_bird_es_agent_tf(plot_learning_curve=True)
 
 # env = FlappyBirdEnv(sleep_time=0.01)
 # run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_flappy.npz", seed=ES_SEED)
 # run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_flappy.npz", seed=CMAES_SEED)
+# run_game_simulation_with_agent_tf(env=env, weights="data/es_tf_mlp_weights_flappy.ckpt", seed=ES_SEED)
 
 # Run for Ms Pacman
 
@@ -249,6 +317,6 @@ train_function_optimizing_agent(optimizer=cmaes, plot_learning_curve=True)
 # run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_pacman.npz", seed=CMAES_SEED)
 
 
-# TODO: add TF neural net
 # TODO: implement PEPG
-# TODO: add evaluation framework
+# TODO: implement neural architecture search
+# TODO: expand TF model to accommodate more layer types than just dense

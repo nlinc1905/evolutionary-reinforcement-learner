@@ -26,8 +26,8 @@ class ParameterFitness:
         This object is a wrapper for the environment, which takes a set of params and returns a reward.
         It is the function to be maximized, a.k.a. the fitness function or objective function.
 
-        :param model: A pre-initialized model
-        :param env: A pre-initialized MsPacmanEnv object
+        :param model: A model object
+        :param env: An environment object
         :param state_history_length: Optional parameter defining how many observations to keep as
             part of the current state.  This allows many observations to inform the game state.
             Defaults to 1, meaning only the current observation makes up a state.
