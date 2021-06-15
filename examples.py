@@ -210,7 +210,21 @@ def run_game_simulation_with_agent(env, weights, seed):
 def build_tf_mlp(env):
     inputs = Input(shape=len(env.reset()) * STATE_HISTORY_LEN)
     x = Flatten()(inputs)
-    x = Dense(50, activation="relu")(x)
+
+    # Simple architecture search
+    arch_scores = []
+    for i in range(3):
+        for ii in range(i):
+            x = Dense(50, activation="relu")(x)
+        m = EvolutionaryModel(model=Model(inputs=inputs, outputs=x))
+        arch_scores.append(m.score_architecture(nbr_obs=200))
+    best_arch = arch_scores.index(max(arch_scores)) + 1
+    print("Best architecture has:", best_arch, "dense layers")
+
+    # Construct network with best architecture
+    x = Flatten()(inputs)  # resets x
+    for i in range(best_arch):
+        x = Dense(50, activation="relu")(x)
     outputs = Dense(len(env.action_map), activation="softmax")(x)
     model = Model(inputs=inputs, outputs=outputs)
     model.compile()  # compile with defaults because they do not matter, as optimization will not be used
@@ -318,5 +332,5 @@ train_function_optimizing_agent(optimizer=cmaes, plot_learning_curve=True)
 
 
 # TODO: implement PEPG
-# TODO: implement neural architecture search
 # TODO: expand TF model to accommodate more layer types than just dense
+# TODO: expand neural architecture search

@@ -1,6 +1,10 @@
 import numpy as np
 import tensorflow.keras.backend as K
 
+from tqdm import tqdm
+
+from utils import hamming_dist, calculate_nas_score
+
 
 class EvolutionaryModel:
     def __init__(self, model):
@@ -104,3 +108,21 @@ class EvolutionaryModel:
         # Ensure that the dimensions for the network match the loaded weights by overwriting them
         assert len(self.get_params()) == self.expected_input_shape
         return print(f"Model weights loaded.")
+
+    def score_architecture(self, nbr_obs):
+        """
+        Calculates the architecture score by passing N random observations through the untrained network.
+
+        :params nbr_obs: How many random observations to generate. generation size is a good number to use here.
+            Mellor et. al. used minibatch size.
+
+        :return: NAS score, float64 data type
+        """
+        activations = np.zeros(shape=(nbr_obs, self.model.output_shape[1]))
+        for i in tqdm(range(nbr_obs)):
+            rand_array = np.atleast_2d(np.random.randn(self.model.input_shape[1], ))
+            activations[i] = self.model(rand_array)[0]
+        hamming_dist_matrix = hamming_dist(arr=activations)
+        nas_score = calculate_nas_score(arr=activations, hamming_dist_matrix=hamming_dist_matrix)
+        print("Neural architecture score:", nas_score)
+        return nas_score

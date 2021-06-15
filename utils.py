@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 
 
 def get_mean_and_standardized_rewards(reward_per_offspring):
@@ -71,3 +72,52 @@ def play_game(env, model, reward_function, nbr_games=1):
     # Close any non-PLE environment
     if env.env_name != "FlappyBird":
         env.env.close()
+
+
+def hamming_dist(arr):
+    """
+    Calculates the Hamming distance between every 2 pairs of columns in the input
+    matrix.  Outputs a 2D square matrix of the pairwise Hamming distances.
+
+    :param arr: 2D numpy array where the columns are the things you want to compare.
+        For example, this could be a document-sentence matrix where you want to compare
+        every sentence to every other sentence.
+    :return: 2D numpy array of Hamming distances
+    """
+    if len(arr.shape) != 2:
+        raise TypeError(f"Expected a 2D numpy array but got an array of shape {arr.shape}")
+    # Binarize the array by making every value > 0 equal to 1
+    arr_bin = np.where(arr > 0, 1, 0)
+    # Create a reversed binarized array where every 0 value is set to 1 and everything else is 0
+    # This will allow the zeros to be counted in the Hamming distance
+    arr_bin_one_zero_reversed = np.where(arr + 1 > 1, 0, 1)
+    # First co-occurrence matrix compares every pair of columns along the non-zero elements
+    cooc_matrix_1s = arr_bin.T.dot(arr_bin)
+    # Second co-occurrence matrix compares every pair of columns along the zero elements
+    cooc_matrix_0s = arr_bin_one_zero_reversed.T.dot(arr_bin_one_zero_reversed)
+    # Add the two co-occurrence matrices to get the final Hamming distances
+    return cooc_matrix_1s + cooc_matrix_0s
+
+
+def calculate_nas_score(arr, hamming_dist_matrix):
+    """
+    Calculates the neural architecture search (NAS) score for the given array of neuron activations.
+    This function implements the score from: https://arxiv.org/pdf/2006.04647.pdf.
+    See equations 1 and 2 in the paper.  The score from (2) is returned.  The higher this score,
+    the weaker the similarity between the neurons, and thus, the network is preferred to one with a
+    lower score.
+
+    :param arr: 2D numpy array of neuron activations after input has been run through them.
+        Array has shape (nbr_observations, nbr_neurons).
+    :param hamming_dist_matrix: 2D numpy array of the Hamming distances between every 2 pairs of neurons.
+        This is the output from utils.hamming_dist
+
+    :return: a float64 value for the NAS score.  Higher score = better architecture.
+    """
+    # Create the kernel (see equation 1 from the paper)
+    # Subtracting the Hamming dist matrix from the total number of observations zeros out the diagonal
+    kernel_h = arr.shape[0] - hamming_dist_matrix
+    # The L1 norm scores the network such that networks whose neurons are more similar are penalized
+    # The L1 norm order is inf because we want the columns sums, but the matrix is square so it does not really matter
+    l1_norm = np.linalg.norm(kernel_h, ord=np.inf)
+    return np.log(l1_norm)

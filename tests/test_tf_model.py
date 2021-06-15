@@ -45,3 +45,8 @@ class EvolutionaryModelTestCase(unittest.TestCase):
         test_array = np.random.randn(len(self.env.reset()),)
         test_action = self.model.sample_action(x=test_array)
         assert isinstance(test_action, np.int64)
+
+    def test_score_architecture(self):
+        # Assert that the score is a float
+        score = self.model.score_architecture(nbr_obs=20)
+        assert isinstance(score, np.float64)

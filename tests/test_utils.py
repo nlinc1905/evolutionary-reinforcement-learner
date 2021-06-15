@@ -1,6 +1,12 @@
 import numpy as np
 
-from utils import get_mean_and_standardized_rewards, mutate, update_params
+from utils import (
+    get_mean_and_standardized_rewards,
+    mutate,
+    update_params,
+    hamming_dist,
+    calculate_nas_score,
+)
 
 
 def test_get_mean_and_standardized_rewards():
@@ -42,3 +48,23 @@ def test_update_params():
         )
     )
     np.testing.assert_array_equal(r, np.array([5.065, 4.145, 3.225]))
+
+
+def test_hamming_dist():
+    # Assert that distance matrix equals what is expected for a given array
+    test_array = np.array([[0, 3, 5], [2, 0, 6]])
+    hamming = hamming_dist(arr=test_array)
+    expected = np.array([
+        [2, 0, 1],
+        [0, 2, 1],
+        [1, 1, 2]
+    ])
+    np.testing.assert_equal(actual=hamming, desired=expected)
+
+
+def test_calculate_nas_score():
+    # Assert that the score equals what is expected for a given array
+    test_array = np.array([[0, 3, 5], [2, 0, 6]])
+    hamming = hamming_dist(arr=test_array)
+    score = calculate_nas_score(arr=test_array, hamming_dist_matrix=hamming)
+    assert round(score, 4) == 1.0986
