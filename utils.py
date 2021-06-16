@@ -36,6 +36,32 @@ def mutate(standardized_reward, noise_array):
     return np.dot(noise_array.T, standardized_reward)
 
 
+def compute_centered_ranks(x):
+    """
+    Implementation of OpenAI's evolution strategy ranking method (Salimans, et. al., 2017).
+    See: https://arxiv.org/abs/1703.03864.
+
+    This function performs fitness shaping by applying a rank transformation to
+    the rewards/fitnesses.  The rank transformation converts a given array to
+    an array of ranks centered around 0.  The min fitness gets a rank score of -0.5,
+    and the max fitness gets a rank score of 0.5
+
+    According to Salimans, et. al., 2017, the transformation removes the influence
+    of outliers in a generation, which reduces the chance for the evolutionary algorithm
+    to get trapped in a local optima.
+
+    :param x: 1D numpy array of the rewards or fitness values for a generation
+
+    :return: 1D numpy array of the centered ranks
+    """
+    ranks = np.empty(len(x), dtype=int)
+    ranks[x.argsort()] = np.arange(len(x))
+    y = ranks.ravel().reshape(x.shape).astype(float)
+    y /= (x.size - 1)
+    y -= 0.5
+    return y
+
+
 def update_params(params, learning_rate, sigma, noise_array, standardized_reward_w_noise):
     """
     Applies the updates to the given parameters.

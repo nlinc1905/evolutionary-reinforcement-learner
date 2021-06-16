@@ -8,12 +8,13 @@ from environments.flappy_bird_env import FlappyBirdEnv
 from environments.ms_pacman_env import MsPacmanEnv
 from models.mlp import MLP
 from models.tf_model import EvolutionaryModel
-from optimizers.evolutionary_algorithms import EvolutionaryStrategy, CMAES
+from optimizers.evolutionary_algorithms import EvolutionaryStrategy, CMAES, PGPE
 from reward_functions.fitness_functions import quadratic_fxn_fitness, ParameterFitness
 from utils import play_game
 
 
 STATE_HISTORY_LEN = 1  # how many observations to save in game state
+# The seeds do not matter, but I am impatient so I started with seeds to shorten learning for these examples
 ES_SEED = 408
 CMAES_SEED = 447893
 
@@ -306,6 +307,19 @@ cmaes = CMAES(
     weight_decay=0.01
 )
 train_function_optimizing_agent(optimizer=cmaes, plot_learning_curve=True)
+
+pgpe = PGPE(
+    nbr_generations=600,
+    generation_size=50,
+    nbr_params=3,
+    reward_function=quadratic_fxn_fitness,
+    learning_rate_mu=0.25,
+    learning_rate_sigma=0.1,
+    sigma=0.1,
+    max_sigma_change=0.2,
+    shape_fitness=True
+)
+train_function_optimizing_agent(optimizer=pgpe, plot_learning_curve=True)
 
 # Run for Flappy Bird
 

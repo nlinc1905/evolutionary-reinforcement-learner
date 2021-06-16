@@ -4,7 +4,12 @@ from multiprocessing.dummy import Pool
 from tqdm import tqdm
 import cma
 
-from utils import get_mean_and_standardized_rewards, mutate, update_params
+from utils import (
+    get_mean_and_standardized_rewards,
+    mutate,
+    compute_centered_ranks,
+    update_params
+)
 
 
 class EvolutionaryStrategy:
@@ -195,6 +200,7 @@ class CMAES:
         reward_table = -np.array(reward).astype(np.float64)
 
         # Apply weights to the rewards, effectively shrinking them by a small amount
+        # This prevents them from growing too large when compared to the noise that gets added to them during mutation
         if self.weight_decay > 0:
             weights_w_l2_decay = self._compute_weights_w_decay(model_param_list=self.solutions)
             reward_table += weights_w_l2_decay
@@ -246,3 +252,213 @@ class CMAES:
                 self.params = generation_optimal_params
 
         return self.params, reward_per_generation
+
+
+class PGPE:
+    def __init__(
+            self,
+            nbr_generations,
+            generation_size,
+            nbr_params,
+            reward_function,
+            learning_rate_mu=0.25,
+            learning_rate_sigma=0.1,
+            sigma=0.1,
+            max_sigma_change=0.2,
+            shape_fitness=True
+    ):
+        """
+        Implements Policy Gradients with Parameter Based-Exploration (PGPE),
+        introduced by Sehnke, Osendorfer, Tuckstieb, & Graves, 2008
+        https://www.researchgate.net/publication/221079957_Policy_Gradients_with_Parameter-Based_Exploration_for_Control
+
+        This implementation differs in a couple ways from the original PGPE.  First, generation sizes are constant,
+        rather than adaptive.  Second, fitness shaping is applied via the fitness rank centering transformation
+        method used by OpenAI's evolution strategy.
+
+        PGPE works by initializing a center point (defaults to zeros here) in the parameter space.  Observations
+        are randomly sampled from the parameter space, with mean mu and standard deviation sigma.  Each sample
+        is paired with a mirrored sample, which is a reflection of the observation across the center point.  This
+        creates a vector, for each sample, that crosses the center point in the direction of the sample (not
+        the mirror).  These vectors get evaluated based on the sample and mirror fitness, and the result is a weight
+        that determines how much the vector influences the center point.  In this way, the offspring move the center
+        to a more optimal point for the next generation.  Generating the offspring from 1 parent (the center point)
+        controls the variation in the parameter space, which helps move the optimization along.
+
+        :param nbr_generations: int - how many generations of offspring to create until finished
+        :param generation_size: int - how many offspring to create each generation
+        :param nbr_params: int - the number of parameters to learn; the length of the 1D numpy array of parameters
+            represented by each offspring
+        :param reward_function: function - This function is like the environment, which takes a set of params
+            and returns a reward.  It is the function to be maximized, a.k.a. fitness function or objective function
+        :param learning_rate_mu: float - learning rate coefficient for the mean, mu, of the sampling distribution
+        :param learning_rate_sigma: float - learning rate coefficient for the standard deviation, sigma, of the
+            sampling distribution
+        :param sigma: float - The step size or mutation strength (the standard deviation of the normal distribution).
+            This will be multiplied by a Gaussian random noise vector to mutate offspring.
+        :param max_sigma_change: float - The maximum change to sigma that is allowed for a generation.  This reduces
+            the influence of outliers, resulting in faster convergence, and it helps prevent getting stuck in local
+            optima.
+        :param shape_fitness: boolean - Whether or not to apply fitness shaping via rank transformation.
+            This is optional, but during testing, setting it to True reduced the nbr_generations required for
+            good results for the quadratic_fxn_fitness by an order of magnitude.
+        """
+        self.nbr_generations = nbr_generations
+        self.generation_size = generation_size
+        self.nbr_params = nbr_params
+        self.get_reward_for_params = reward_function
+        self.learning_rate_mu = learning_rate_mu
+        self.learning_rate_sigma = learning_rate_sigma
+        self.sigma = sigma
+        self.max_sigma_change = max_sigma_change
+        self.shape_fitness = shape_fitness
+        # The number of directions around the generation center must be half the total generation size,
+        #  because they will be symmetric about the center.
+        self.nbr_directions = generation_size // 2
+        # Initialize center, mu, as all zeros.  mu will ultimately become the optimal parameters
+        self.mu = np.zeros(nbr_params)
+
+    def _generate_offspring(self, center):
+        """
+        Generates a new generation of solutions.  Only the center of each generation is carried
+        forward, so all new offspring are randomly generated from a Gaussian distribution around
+        the center.  For each random sample, a mirror of the solution is made.  Thus, a generation
+        is 1/2 random samples and 1/2 samples that are reflected about the center (origin).  Rather
+        than generating offspring from parents, they are generated from the average of their parents,
+        or the center.
+
+        :param center: 1D numpy array representing the mean parameter values, mu
+
+        :return: a new generation of solutions (list of 1D numpy arrays),
+            and the random noise used to create them (list of 1D numpy arrays)
+        """
+        # Empty lists to hold the generated solutions (offspring) and the randomly sampled noise around the center
+        offspring = []
+        random_noise_samples = []
+
+        # nbr_directions is 0.5 * generation_size, because half of the offspring will be mirrors of the other half
+        for child in range(self.nbr_directions):
+            gaussian_noise = np.random.randn(self.nbr_params)
+            scaled_gaussian_noise = self.sigma * gaussian_noise
+
+            solution = center + scaled_gaussian_noise
+            mirror = center - scaled_gaussian_noise
+
+            offspring.append(solution)
+            offspring.append(mirror)
+            random_noise_samples.append(scaled_gaussian_noise)
+
+        return offspring, random_noise_samples
+
+    def _evaluate_fitness_of_generation(self, generation):
+        """
+        Evaluates the fitness of a generation using the given reward function.
+
+        :param generation:
+
+        :return: 1D numpy array of the rewards for each offspring in a generation
+        """
+        reward = np.zeros(len(generation))
+        for child in range(len(generation)):
+            reward[child] = self.get_reward_for_params(generation[child])
+        return reward
+
+    def _calculate_updates(self, fitnesses, random_noise_samples):
+        """
+        Calculates the updates to the mean (mu) and standard deviation (sigma) - these are
+        the variables that will update the center and standard deviation that will be used
+        to generate the next generation.
+
+        This function first calculates the gradients.
+
+        :param fitnesses:
+        :param random_noise_samples:
+
+        :return: 1D numpy array of the amount to change the mean of the distribution to use
+            to create the next generation, and a 1D numpy array of the amount to change the
+            standard deviation of the distribution used to create the next generation
+        """
+        baseline_fitness = np.mean(fitnesses)
+        vector_fitness_scores = []
+        vector_average_fitness = []
+
+        # Iterate over every 2, because they were appended in the order of
+        #   (solution, mirror) in the generate_offspring() function
+        for i in range(0, self.generation_size, 2):
+            solution_fit = fitnesses[i]
+            mirror_fit = fitnesses[i + 1]
+
+            # Calculate the fitness score of the directional vector from the mirror to the solution
+            # The vector is in the direction of the solution
+            vector_fitness_scores.append(solution_fit - mirror_fit)
+            # Also calculate the average of the vector
+            vector_average_fitness.append((solution_fit + mirror_fit) / 2.0)
+
+        variance = self.sigma ** 2.0
+        mu = 0.0
+        sigma = 0.0
+
+        for vector_direction in range(self.nbr_directions):
+            # Retrieve the scaled Gaussian noise that was used to create the samples around the generation mean,
+            #   the fitness score for a vector direction, and the average fitness of the vector
+            scaled_gaussian_noise = random_noise_samples[vector_direction]
+            direction_score = vector_fitness_scores[vector_direction]
+            direction_avg_fitness = vector_average_fitness[vector_direction]
+
+            # Update mu by an amount proportional to the direction fitness score
+            mu += scaled_gaussian_noise * direction_score * 0.5
+
+            # Update sigma by an amount proportional to the difference between the direction average fitness
+            #   and the baseline fitness
+            sigma += (
+                (direction_avg_fitness - baseline_fitness)
+                * (((scaled_gaussian_noise ** 2.0) - variance) / self.sigma)
+            )
+
+        # mu and sigma represent the gradient estimates, or the amounts to change the center and standard
+        #  deviation before generating the next generation
+        # Scale the gradients by the number of directions (average them) and return them
+        mu_update = np.array(mu / self.nbr_directions)
+        sigma_update = np.array(sigma / self.nbr_directions)
+        return mu_update, sigma_update
+
+    def evolve(self):
+        """
+        Runs evolution.
+
+        :return: Tuple of final, optimal parameters (1D array) and the array of mean reward per generation
+        """
+        generation_fitness_tracker = []
+        for g in range(self.nbr_generations):
+            # Create offspring and evaluate their fitness
+            generation, generation_noise = self._generate_offspring(center=self.mu)
+            generation_rewards = self._evaluate_fitness_of_generation(generation=generation)
+
+            # Track this generation's fitness
+            generation_fitness_tracker.append(np.mean(generation_rewards))
+
+            # Apply fitness shaping via rank transformation
+            if self.shape_fitness:
+                generation_rewards = compute_centered_ranks(x=generation_rewards)
+
+            # Compute the gradients, or the amounts to update the center and standard deviation
+            mu_grad, sigma_grad = self._calculate_updates(
+                fitnesses=generation_rewards,
+                random_noise_samples=generation_noise
+            )
+
+            # Update the center, mu, and standard deviation, sigma
+            self.mu = self.mu + self.learning_rate_mu * mu_grad
+
+            # Clip the standard deviation if it exceeds the max allowed change value
+            original_std_dev = self.sigma
+            self.sigma = self.sigma + self.learning_rate_sigma * sigma_grad
+            allowed_sigma_grad = abs(original_std_dev) * self.max_sigma_change
+            np.clip(
+                a=self.sigma,
+                a_min=(original_std_dev - allowed_sigma_grad),
+                a_max=(original_std_dev + allowed_sigma_grad),
+                out=self.sigma
+            )
+
+        return self.mu, generation_fitness_tracker
