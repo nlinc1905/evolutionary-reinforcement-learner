@@ -110,6 +110,45 @@ def train_flappy_bird_cmaes_agent(plot_learning_curve=False):
     return np.mean(generational_fitness), optimal_params
 
 
+def train_flappy_bird_pgpe_agent(plot_learning_curve=False):
+    env = FlappyBirdEnv()
+    mlp = MLP(
+        input_dim=len(env.reset()) * STATE_HISTORY_LEN,
+        hidden_units=50,
+        nbr_classes=len(env.action_map),
+        seed=ES_SEED,
+    )
+    params = mlp.get_params()
+    fitfxn = ParameterFitness(
+        model=mlp,
+        env=env,
+        state_history_length=STATE_HISTORY_LEN
+    )
+    pgpe = PGPE(
+        nbr_generations=300,
+        generation_size=60,
+        nbr_params=len(params),
+        reward_function=fitfxn.evaluate,
+        learning_rate_mu=0.25,
+        learning_rate_sigma=0.1,
+        sigma=0.1,
+        max_sigma_change=0.2,
+        shape_fitness=True
+    )
+    optimal_params, generational_fitness = pgpe.evolve()
+    mlp.set_params(params=optimal_params)
+    mlp.save_model_weights(save_path="data/pgpe_mlp_weights_flappy.npz")
+
+    if plot_learning_curve:
+        plt.plot(generational_fitness)
+        plt.title("Fitness by Generation")
+        plt.ylabel("Fitness or Mean Reward")
+        plt.xlabel("Generation")
+        plt.show()
+
+    return np.mean(generational_fitness), optimal_params
+
+
 def train_ms_pacman_es_agent(plot_learning_curve=False):
     env = MsPacmanEnv()
     mlp = MLP(
@@ -325,11 +364,13 @@ train_function_optimizing_agent(optimizer=pgpe, plot_learning_curve=True)
 
 # best_gen_reward, best_gen_params = train_flappy_bird_es_agent(plot_learning_curve=True)
 # best_gen_reward, best_gen_params = train_flappy_bird_cmaes_agent(plot_learning_curve=True)
+# best_gen_reward, best_gen_params = train_flappy_bird_pgpe_agent(plot_learning_curve=True)
 # best_gen_reward, best_gen_params = train_flappy_bird_es_agent_tf(plot_learning_curve=True)
 
 # env = FlappyBirdEnv(sleep_time=0.01)
 # run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_flappy.npz", seed=ES_SEED)
 # run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_flappy.npz", seed=CMAES_SEED)
+# run_game_simulation_with_agent(env=env, weights="data/pgpe_mlp_weights_flappy.npz", seed=ES_SEED)
 # run_game_simulation_with_agent_tf(env=env, weights="data/es_tf_mlp_weights_flappy.ckpt", seed=ES_SEED)
 
 # Run for Ms Pacman

@@ -429,7 +429,7 @@ class PGPE:
         :return: Tuple of final, optimal parameters (1D array) and the array of mean reward per generation
         """
         generation_fitness_tracker = []
-        for g in range(self.nbr_generations):
+        for g in tqdm(range(self.nbr_generations)):
             # Create offspring and evaluate their fitness
             generation, generation_noise = self._generate_offspring(center=self.mu)
             generation_rewards = self._evaluate_fitness_of_generation(generation=generation)
