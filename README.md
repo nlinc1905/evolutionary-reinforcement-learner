@@ -5,11 +5,13 @@ Custom, ground-up implementations of the evolutionary strategy (ES) and policy g
 
 A custom multi-layer perceptron (MLP) is provided, but it is also possible to define your own neural network in Tensorflow and pass it to the EvolutionaryModel wrapper so that it is optimized with an evolutionary algorithm instead of TF optimizers.  See examples.py and the documentation below for examples of how to do that.
 
-To help you define your own TF neural network, this module includes a neural architecture search (NAS) implementation that allows architecture to be optimized without training.  This implementation uses the score proposed by Mellor, Turner, Storky, & Crowley, 2021 (https://arxiv.org/abs/2006.04647).  
+To help you define your own TF neural network, this module includes a neural architecture search (NAS) implementation that allows architecture to be optimized, without training!  This implementation uses the score proposed by Mellor, Turner, Storky, & Crowley, 2021 (https://arxiv.org/abs/2006.04647).  
 
 ### Sources for the evolutionary algorithm implementations
 Evolutionary Strategy: Beyer & Schwefel, 2002 (https://www.researchgate.net/publication/220132816_Evolution_strategies_-_A_comprehensive_introduction)
+
 Covariance Matrix Adaptive Evolutionary Strategy:  Hansen, 2016 (https://arxiv.org/abs/1604.00772)
+
 Policy Gradients with Parameter-Based Exploration: Sehnke, Osendorfer, Tuckstieb, & Graves, 2008 (https://www.researchgate.net/publication/221079957_Policy_Gradients_with_Parameter-Based_Exploration_for_Control)
 
 # How to Run
