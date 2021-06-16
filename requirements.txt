@@ -1,4 +1,4 @@
-atari-py==0.2.0
+atari-py==0.2.9
 cma==3.0.3
 gym==0.17.2
 matplotlib==3.3.2

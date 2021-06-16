@@ -1,9 +1,12 @@
 FROM ubuntu:18.04
 
+ENV DEBIAN_FRONTEND="noninteractive"
+ENV TZ="America/New_York"
+
 # Install Linux dependencies
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y python3 python3-setuptools python3-pip git wget unar
+    apt-get install -y python3 python3-setuptools python3-pip git wget unar unzip
 
 COPY . /app
 WORKDIR /app
@@ -21,6 +24,7 @@ RUN git clone https://github.com/ntasfi/PyGame-Learning-Environment && \
 # Import them using the atari-py library
 RUN wget http://www.atarimania.com/roms/Roms.rar && \
     unar Roms.rar && \
-    python3 -m atari_py.import_roms Roms && \
-    rm -R Roms && \
-    rm Roms.rar
+    cd Roms && \
+    unzip ROMS.zip && \
+    python3 -m atari_py.import_roms ROMS
+
