@@ -386,6 +386,5 @@ train_function_optimizing_agent(optimizer=pgpe, plot_learning_curve=True)
 # run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_pacman.npz", seed=CMAES_SEED)
 
 
-# TODO: implement PEPG
 # TODO: expand TF model to accommodate more layer types than just dense
 # TODO: expand neural architecture search

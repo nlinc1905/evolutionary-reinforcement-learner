@@ -3,6 +3,7 @@ import numpy as np
 from utils import (
     get_mean_and_standardized_rewards,
     mutate,
+    compute_centered_ranks,
     update_params,
     hamming_dist,
     calculate_nas_score,
@@ -31,6 +32,14 @@ def test_mutate():
     test_noise_array = np.array([[1, 3, 5], [2, 4, 6]])
     r = mutate(standardized_reward=test_reward_array, noise_array=test_noise_array)
     np.testing.assert_array_equal(r, np.array([13, 29, 45]))
+
+
+def test_compute_centered_ranks():
+    # Assert that a given input produces its expected output
+    test_array = np.array([-1, 0, 3, 15])
+    y = compute_centered_ranks(x=test_array)
+    expected_output = np.array([-0.5, -0.166667,  0.166667,  0.5])
+    np.testing.assert_allclose(actual=y, desired=expected_output, atol=1e-5)
 
 
 def test_update_params():

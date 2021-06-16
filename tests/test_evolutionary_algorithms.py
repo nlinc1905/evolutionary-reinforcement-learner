@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from optimizers.evolutionary_algorithms import EvolutionaryStrategy, CMAES
+from optimizers.evolutionary_algorithms import EvolutionaryStrategy, CMAES, PGPE
 
 
 class EvolutionaryStrategyTestCase(unittest.TestCase):
@@ -49,3 +49,28 @@ class CMAESTestCase(unittest.TestCase):
         assert optimal_params.shape == self.test_params.shape
         expected_reward = np.array([0., 0.])  # 2 generation, each with 0 reward
         np.testing.assert_allclose(actual=-reward, desired=expected_reward, atol=1e-3)  # will not be exact for CMA-ES
+
+
+class PGPETestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.seed = 14
+        self.test_params = np.random.randn(5)
+        self.pgpe = PGPE(
+            nbr_generations=2,
+            generation_size=4,
+            nbr_params=len(self.test_params),
+            reward_function=lambda params: 0,  # always returns 0 for reward
+            learning_rate_mu=0.25,
+            learning_rate_sigma=0.1,
+            sigma=0.1,
+            max_sigma_change=0.2,
+            shape_fitness=True
+        )
+
+    def test_evolve(self):
+        # Assert that the params have the right shape and that the rewards are as expected for the given reward function
+        optimal_params, mean_reward = self.pgpe.evolve()
+        assert optimal_params.shape == self.test_params.shape
+        expected_reward = np.array([0., 0.])  # 2 generation, each with 0 reward
+        np.testing.assert_equal(actual=mean_reward, desired=expected_reward)
