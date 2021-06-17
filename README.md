@@ -16,20 +16,21 @@ Policy Gradients with Parameter-Based Exploration: Sehnke, Osendorfer, Tuckstieb
 
 # How to Run
 
-To run, bash into the container:
+To run, bash into the container.  Create a data folder to hold the model weights:
 
 ```
 docker build .
 docker run -it <name_of_container> /bin/bash
+mkdir data
 ```
 
-To run tests from the root directory:
+To run tests from the root directory, after bashing into container:
 
 ```
 python -m pytest tests
 ```
 
-To run examples from the root directory:
+To run examples from the root directory, after bashing into container:
 
 ```
 python examples.py

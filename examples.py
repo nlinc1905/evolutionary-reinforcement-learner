@@ -26,8 +26,10 @@ def train_function_optimizing_agent(optimizer, plot_learning_curve=False):
         # Make positive, if needed, so the curve goes up instead of down
         if generational_fitness[-1] < generational_fitness[0]:
             generational_fitness *= -1
+        # Quick way to extract model name to display in title
+        model_name = str(optimizer)[str(optimizer).replace(".", "", 1).find(".") + 2:str(optimizer).find(" ")]
         plt.plot(generational_fitness)
-        plt.title("Fitness by Generation")
+        plt.title(f"{model_name} Fitness by Generation")
         plt.ylabel("Fitness or Mean Reward")
         plt.xlabel("Generation")
         plt.show()
@@ -319,7 +321,7 @@ def run_game_simulation_with_agent_tf(env, weights):
         env=env,
         model=model,
         reward_function=fitfxn.evaluate,
-        nbr_games=5
+        nbr_games=1
     )
 
 
@@ -368,22 +370,30 @@ best_gen_reward, best_gen_params = train_flappy_bird_pgpe_agent(plot_learning_cu
 best_gen_reward, best_gen_params = train_flappy_bird_es_agent_tf(plot_learning_curve=True)
 
 env = FlappyBirdEnv(sleep_time=0.01)
+print("Playing Flappy Bird with ES optimized agent")
 run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_flappy.npz", seed=ES_SEED)
+print("Playing Flappy Bird with CMAES optimized agent")
 run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_flappy.npz", seed=CMAES_SEED)
+print("Playing Flappy Bird with PGPE optimized agent")
 run_game_simulation_with_agent(env=env, weights="data/pgpe_mlp_weights_flappy.npz", seed=ES_SEED)
+print("Playing Flappy Bird with ES optimized agent and Tensorflow model")
 run_game_simulation_with_agent_tf(env=env, weights="data/es_tf_mlp_weights_flappy.ckpt", seed=ES_SEED)
 
 # Run for Ms Pacman
 
 env = MsPacmanEnv(sleep_time=0.01)
-env.random_play()
+# env.random_play()
 
 best_gen_reward, best_gen_params = train_ms_pacman_es_agent(plot_learning_curve=True)
 best_gen_reward, best_gen_params = train_ms_pacman_cmaes_agent(plot_learning_curve=True)
 
 env = MsPacmanEnv(sleep_time=0.05)
+print("Playing Ms Pacman with ES optimized agent")
 run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_pacman.npz", seed=ES_SEED)
-run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_pacman.npz", seed=CMAES_SEED)
+print("Playing Ms Pacman with ES optimized agent when reward = episode length")
+run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_pacman_rew2.npz", seed=ES_SEED)
+print("Playing Flappy Bird with CMAES optimized agent")
+run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_pacman_rew.npz", seed=CMAES_SEED)
 
 
 # TODO: expand TF model to accommodate more layer types than just dense
