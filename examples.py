@@ -362,28 +362,28 @@ train_function_optimizing_agent(optimizer=pgpe, plot_learning_curve=True)
 
 # Run for Flappy Bird
 
-# best_gen_reward, best_gen_params = train_flappy_bird_es_agent(plot_learning_curve=True)
-# best_gen_reward, best_gen_params = train_flappy_bird_cmaes_agent(plot_learning_curve=True)
-# best_gen_reward, best_gen_params = train_flappy_bird_pgpe_agent(plot_learning_curve=True)
-# best_gen_reward, best_gen_params = train_flappy_bird_es_agent_tf(plot_learning_curve=True)
+best_gen_reward, best_gen_params = train_flappy_bird_es_agent(plot_learning_curve=True)
+best_gen_reward, best_gen_params = train_flappy_bird_cmaes_agent(plot_learning_curve=True)
+best_gen_reward, best_gen_params = train_flappy_bird_pgpe_agent(plot_learning_curve=True)
+best_gen_reward, best_gen_params = train_flappy_bird_es_agent_tf(plot_learning_curve=True)
 
-# env = FlappyBirdEnv(sleep_time=0.01)
-# run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_flappy.npz", seed=ES_SEED)
-# run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_flappy.npz", seed=CMAES_SEED)
-# run_game_simulation_with_agent(env=env, weights="data/pgpe_mlp_weights_flappy.npz", seed=ES_SEED)
-# run_game_simulation_with_agent_tf(env=env, weights="data/es_tf_mlp_weights_flappy.ckpt", seed=ES_SEED)
+env = FlappyBirdEnv(sleep_time=0.01)
+run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_flappy.npz", seed=ES_SEED)
+run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_flappy.npz", seed=CMAES_SEED)
+run_game_simulation_with_agent(env=env, weights="data/pgpe_mlp_weights_flappy.npz", seed=ES_SEED)
+run_game_simulation_with_agent_tf(env=env, weights="data/es_tf_mlp_weights_flappy.ckpt", seed=ES_SEED)
 
 # Run for Ms Pacman
 
-# env = MsPacmanEnv(sleep_time=0.01)
-# env.random_play()
+env = MsPacmanEnv(sleep_time=0.01)
+env.random_play()
 
-# best_gen_reward, best_gen_params = train_ms_pacman_es_agent(plot_learning_curve=True)
-# best_gen_reward, best_gen_params = train_ms_pacman_cmaes_agent(plot_learning_curve=True)
+best_gen_reward, best_gen_params = train_ms_pacman_es_agent(plot_learning_curve=True)
+best_gen_reward, best_gen_params = train_ms_pacman_cmaes_agent(plot_learning_curve=True)
 
-# env = MsPacmanEnv(sleep_time=0.05)
-# run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_pacman.npz", seed=ES_SEED)
-# run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_pacman.npz", seed=CMAES_SEED)
+env = MsPacmanEnv(sleep_time=0.05)
+run_game_simulation_with_agent(env=env, weights="data/es_mlp_weights_pacman.npz", seed=ES_SEED)
+run_game_simulation_with_agent(env=env, weights="data/cmaes_mlp_weights_pacman.npz", seed=CMAES_SEED)
 
 
 # TODO: expand TF model to accommodate more layer types than just dense

@@ -1,5 +1,4 @@
 import numpy as np
-from tqdm import tqdm
 
 
 def get_mean_and_standardized_rewards(reward_per_offspring):
