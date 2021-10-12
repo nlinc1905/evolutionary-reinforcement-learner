@@ -27,14 +27,16 @@ mkdir data
 To run tests from the root directory, after bashing into container:
 
 ```
-python -m pytest tests
+python3 -m pytest tests
 ```
 
 To run examples from the root directory, after bashing into container:
 
 ```
-python examples.py
+python3 examples.py
 ```
+
+You will not be able to see the games being played out in Pygame when running from within a container, because your video device will be inaccessible.  To see the games being played, you will need to run the examples outside of a container.  This will require installing requirements.txt, and downloading/extracting the Atari ROMs.  Copy the lines run in the Dockerfile to do this.
 
 # Folder Structure
 
