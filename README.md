@@ -1,5 +1,9 @@
 # evolutionary-reinforcement-learner
-Implementations of evolutionary algorithms for reinforcement learning
+Implementations of evolutionary algorithms for reinforcement learning, with examples for testing the algorithms on Flappy Bird and Ms. Pac-man.
+
+![Flappy bird demo](files_for_readme/flappy_bird.gif)
+
+## Implemented Algorithms
 
 Custom, ground-up implementations of the evolutionary strategy (ES) and policy gradients with parameter-based exploration (PGPE), and a wrapper for covariance matrix adative evolutionary strategy (CMAES) implemented with the Python CMA library.  
 
